@@ -1,0 +1,44 @@
+name: TerraView CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install Dependencies
+      run: npm ci
+
+    - name: Generate Prisma Client
+      # We need the client generated to check for type errors in API routes
+      run: npx prisma generate
+
+    - name: Run Linting
+      run: npm run lint
+
+    - name: Type Checking
+      # This ensures no TypeScript errors exist
+      run: npx tsc --noEmit
+
+    - name: Build Project
+      # Checks if Next.js can build successfully
+      run: npm run build
+      env:
+        # We add dummy env vars so the build doesn't fail on missing keys
+        DATABASE_URL: "postgresql://user:password@localhost:5432/db"
+        NEXTAUTH_SECRET: "dummy-secret"
+        GOOGLE_API_KEY: "dummy-key"
